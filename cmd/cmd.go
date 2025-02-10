@@ -16,7 +16,6 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -30,8 +29,6 @@ import (
 	"github.com/rclone/rclone/fs/fserrors"
 	"github.com/rclone/rclone/fs/fspath"
 	fslog "github.com/rclone/rclone/fs/log"
-	"github.com/rclone/rclone/fs/rc"
-	"github.com/rclone/rclone/fs/rc/rcserver"
 	fssync "github.com/rclone/rclone/fs/sync"
 	"github.com/rclone/rclone/lib/atexit"
 	"github.com/rclone/rclone/lib/buildinfo"
@@ -423,19 +420,6 @@ func initConfig() {
 		fs.Debugf("rclone", "systemd logging support activated")
 	}
 
-	// Start the remote control server if configured
-	_, err = rcserver.Start(ctx, &rc.Opt)
-	if err != nil {
-		fs.Fatalf(nil, "Failed to start remote control: %v", err)
-	}
-
-	// Start the metrics server if configured
-	_, err = rcserver.MetricsStart(ctx, &rc.Opt)
-	if err != nil {
-		fs.Fatalf(nil, "Failed to start metrics server: %v", err)
-
-	}
-
 	// Setup CPU profiling if desired
 	if *cpuProfile != "" {
 		fs.Infof(nil, "Creating CPU profile %q\n", *cpuProfile)
@@ -538,9 +522,6 @@ func Main() {
 	setupRootCommand(Root)
 	AddBackendFlags()
 	if err := Root.Execute(); err != nil {
-		if strings.HasPrefix(err.Error(), "unknown command") && selfupdateEnabled {
-			Root.PrintErrf("You could use '%s selfupdate' to get latest features.\n\n", Root.CommandPath())
-		}
 		fs.Logf(nil, "Fatal error: %v", err)
 		os.Exit(exitcode.UsageError)
 	}

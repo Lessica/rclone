@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rclone/rclone/backend/crypt"
 	"github.com/rclone/rclone/cmd/bisync/bilib"
 	"github.com/rclone/rclone/cmd/check"
 	"github.com/rclone/rclone/fs"
@@ -18,7 +17,6 @@ import (
 
 var hashType hash.Type
 var fsrc, fdst fs.Fs
-var fcrypt *crypt.Fs
 
 // WhichCheck determines which CheckFn we should use based on the Fs types
 // It is more robust and accurate than Check because
@@ -33,35 +31,6 @@ func WhichCheck(ctx context.Context, opt *operations.CheckOpt) *operations.Check
 		// use normal check
 		opt.Check = CheckFn
 		return opt
-	}
-
-	FsrcCrypt, srcIsCrypt := opt.Fsrc.(*crypt.Fs)
-	FdstCrypt, dstIsCrypt := opt.Fdst.(*crypt.Fs)
-
-	if (srcIsCrypt && dstIsCrypt) || (!srcIsCrypt && dstIsCrypt) {
-		// if both are crypt or only dst is crypt
-		hashType = FdstCrypt.UnWrap().Hashes().GetOne()
-		if hashType != hash.None {
-			// use cryptcheck
-			fsrc = opt.Fsrc
-			fdst = opt.Fdst
-			fcrypt = FdstCrypt
-			fs.Infof(fdst, "Crypt detected! Using cryptcheck instead of check. (Use --size-only or --ignore-checksum to disable)")
-			opt.Check = CryptCheckFn
-			return opt
-		}
-	} else if srcIsCrypt && !dstIsCrypt {
-		// if only src is crypt
-		hashType = FsrcCrypt.UnWrap().Hashes().GetOne()
-		if hashType != hash.None {
-			// use reverse cryptcheck
-			fsrc = opt.Fdst
-			fdst = opt.Fsrc
-			fcrypt = FsrcCrypt
-			fs.Infof(fdst, "Crypt detected! Using cryptcheck instead of check. (Use --size-only or --ignore-checksum to disable)")
-			opt.Check = ReverseCryptCheckFn
-			return opt
-		}
 	}
 
 	// if we've gotten this far, neither check or cryptcheck will work, so use --download
@@ -85,41 +54,6 @@ func CheckFn(ctx context.Context, dst, src fs.Object) (differ bool, noHash bool,
 		return true, false, nil
 	}
 	return false, false, nil
-}
-
-// CryptCheckFn is a slightly modified version of CryptCheck
-func CryptCheckFn(ctx context.Context, dst, src fs.Object) (differ bool, noHash bool, err error) {
-	cryptDst := dst.(*crypt.Object)
-	underlyingDst := cryptDst.UnWrap()
-	underlyingHash, err := underlyingDst.Hash(ctx, hashType)
-	if err != nil {
-		return true, false, fmt.Errorf("error reading hash from underlying %v: %w", underlyingDst, err)
-	}
-	if underlyingHash == "" {
-		return false, true, nil
-	}
-	cryptHash, err := fcrypt.ComputeHash(ctx, cryptDst, src, hashType)
-	if err != nil {
-		return true, false, fmt.Errorf("error computing hash: %w", err)
-	}
-	if cryptHash == "" {
-		return false, true, nil
-	}
-	if cryptHash != underlyingHash {
-		err = fmt.Errorf("hashes differ (%s:%s) %q vs (%s:%s) %q", fdst.Name(), fdst.Root(), cryptHash, fsrc.Name(), fsrc.Root(), underlyingHash)
-		fs.Debugf(src, "%s", err.Error())
-		// using same error msg as CheckFn so integration tests match
-		err = fmt.Errorf("%v differ", hashType)
-		fs.Errorf(src, "%s", err.Error())
-		return true, false, nil
-	}
-	return false, false, nil
-}
-
-// ReverseCryptCheckFn is like CryptCheckFn except src and dst are switched
-// result: src is crypt, dst is non-crypt
-func ReverseCryptCheckFn(ctx context.Context, dst, src fs.Object) (differ bool, noHash bool, err error) {
-	return CryptCheckFn(ctx, src, dst)
 }
 
 // DownloadCheckFn is a slightly modified version of Check with --download

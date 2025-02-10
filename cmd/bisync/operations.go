@@ -657,7 +657,6 @@ func resetGlobals() {
 	queueCI = nil
 	hashType = 0
 	fsrc, fdst = nil, nil
-	fcrypt = nil
 	Opt = Options{}
 	once = gosync.Once{}
 	downloadHashWarn = gosync.Once{}
