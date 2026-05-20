@@ -1,3 +1,5 @@
+//go:build !minimal
+
 // Define the internal rc functions
 
 package rc

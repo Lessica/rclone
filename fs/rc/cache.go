@@ -1,3 +1,5 @@
+//go:build !minimal
+
 // Utilities for accessing the Fs cache
 
 package rc

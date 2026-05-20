@@ -164,53 +164,17 @@ type ServiceOptions struct {
 // Register with rclone
 func init() {
 	fs.Register(&fs.RegInfo{
-		Name:        "iclouddrive",
-		Description: "iCloud Drive and Photos",
-		Config:      Config,
-		NewFs:       NewServiceFs,
-		MetadataInfo: &fs.MetadataInfo{
-			System: map[string]fs.MetadataHelp{
-				"width": {
-					Help:     "Image width in pixels",
-					Type:     "int",
-					ReadOnly: true,
-				},
-				"height": {
-					Help:     "Image height in pixels",
-					Type:     "int",
-					ReadOnly: true,
-				},
-				"added-time": {
-					Help:     "Time the item was added to the iCloud library",
-					Type:     "RFC 3339",
-					Example:  "2006-01-02T15:04:05Z",
-					ReadOnly: true,
-				},
-				"favorite": {
-					Help:     "Whether the item is marked as favorite",
-					Type:     "bool",
-					ReadOnly: true,
-				},
-				"hidden": {
-					Help:     "Whether the item is hidden",
-					Type:     "bool",
-					ReadOnly: true,
-				},
-			},
-			Help: "Metadata is read-only and available for the Photos service only.",
-		},
+		Name:         "iclouddrive",
+		Description:  serviceDescription(),
+		Config:       Config,
+		NewFs:        NewServiceFs,
+		MetadataInfo: serviceMetadataInfo(),
 		Options: []fs.Option{{
 			Name:     configService,
 			Help:     "iCloud service to use.",
 			Required: true,
 			Default:  serviceDrive,
-			Examples: []fs.OptionExample{{
-				Value: serviceDrive,
-				Help:  "iCloud Drive",
-			}, {
-				Value: servicePhotos,
-				Help:  "iCloud Photos",
-			}},
+			Examples: serviceOptionExamples(),
 		}, {
 			Name:      configAppleID,
 			Help:      "Apple ID.",
@@ -487,9 +451,8 @@ func NewServiceFs(ctx context.Context, name, root string, m configmap.Mapper) (f
 		// Create Drive filesystem
 		return NewFs(ctx, name, root, m)
 	case servicePhotos:
-		// Create Photos filesystem
-		return NewFsPhotos(ctx, name, root, m)
+		return newServiceFsPhotos(ctx, name, root, m)
 	default:
-		return nil, fmt.Errorf("invalid service selection: %s (must be 'drive' or 'photos')", opt.Service)
+		return nil, fmt.Errorf("invalid service selection: %s (%s)", opt.Service, serviceSelectionHelp())
 	}
 }

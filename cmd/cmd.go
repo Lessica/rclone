@@ -30,8 +30,6 @@ import (
 	"github.com/rclone/rclone/fs/fserrors"
 	"github.com/rclone/rclone/fs/fspath"
 	fslog "github.com/rclone/rclone/fs/log"
-	"github.com/rclone/rclone/fs/rc"
-	"github.com/rclone/rclone/fs/rc/rcserver"
 	fssync "github.com/rclone/rclone/fs/sync"
 	"github.com/rclone/rclone/lib/atexit"
 	"github.com/rclone/rclone/lib/buildinfo"
@@ -421,19 +419,7 @@ func initConfig() {
 		fs.Debugf("rclone", "systemd logging support activated")
 	}
 
-	// Start the remote control server if configured
-	_, err = rcserver.Start(ctx, &rc.Opt)
-	if err != nil {
-		fs.Fatalf(nil, "Failed to start remote control: %v", err)
-	}
-
-	// Start the metrics server if configured and not running the "rc" command
-	if len(os.Args) >= 2 && os.Args[1] != "rc" {
-		_, err = rcserver.MetricsStart(ctx, &rc.Opt)
-		if err != nil {
-			fs.Fatalf(nil, "Failed to start metrics server: %v", err)
-		}
-	}
+	startBackgroundServices(ctx)
 
 	// Setup CPU profiling if desired
 	if *cpuProfile != "" {

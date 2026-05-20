@@ -1,3 +1,5 @@
+//go:build !minimal
+
 // Package rc implements a remote control server and registry for rclone
 //
 // To register your internal calls, call rc.Add(path, function).  Your

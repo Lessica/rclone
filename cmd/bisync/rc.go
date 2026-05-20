@@ -1,3 +1,5 @@
+//go:build !minimal
+
 //go:generate go run help.go rc.md
 package bisync
 

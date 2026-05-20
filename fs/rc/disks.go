@@ -1,4 +1,4 @@
-//go:build !(netbsd && 386)
+//go:build !(netbsd && 386) && !minimal
 
 package rc
 

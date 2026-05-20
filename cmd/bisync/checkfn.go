@@ -1,3 +1,5 @@
+//go:build !minimal
+
 package bisync
 
 import (

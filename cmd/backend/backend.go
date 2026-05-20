@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/rclone/rclone/cmd"
-	"github.com/rclone/rclone/cmd/rc"
 	"github.com/rclone/rclone/fs"
 	"github.com/rclone/rclone/fs/config/flags"
 	"github.com/rclone/rclone/fs/operations"
@@ -101,7 +101,7 @@ Note to run these commands on a running backend then see
 					return fmt.Errorf("%v: doesn't support backend commands", f)
 				}
 				arg := args[2:]
-				opt := rc.ParseOptions(options)
+				opt := parseOptions(options)
 				out, err = doCommand(context.Background(), name, arg, opt)
 			}
 			if err != nil {
@@ -144,6 +144,18 @@ Note to run these commands on a running backend then see
 		})
 		return nil
 	},
+}
+
+func parseOptions(options []string) map[string]string {
+	opt := make(map[string]string, len(options))
+	for _, option := range options {
+		key, value, found := strings.Cut(option, "=")
+		if !found {
+			value = ""
+		}
+		opt[key] = value
+	}
+	return opt
 }
 
 // show help for a backend

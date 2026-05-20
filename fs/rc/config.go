@@ -1,3 +1,5 @@
+//go:build !minimal
+
 // Implement config options reading and writing
 //
 // This is done here rather than in fs/fs.go so we don't cause a circular dependency

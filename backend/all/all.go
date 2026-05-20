@@ -1,3 +1,5 @@
+//go:build !minimal
+
 // Package all imports all the backends
 package all
 
